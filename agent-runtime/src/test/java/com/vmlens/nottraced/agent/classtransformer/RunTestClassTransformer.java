@@ -79,6 +79,9 @@ public class RunTestClassTransformer {
         ClassReader readerForAnalyze = new ClassReader(transformed);
         readerForAnalyze.accept(new ClassVisitorForLogging(writer), 0);
 
+        System.out.println(resource);
+        System.out.println();
+        System.out.println(out.toString());
         new DiffText().assertEquals(resource, out.toString());
     }
 
