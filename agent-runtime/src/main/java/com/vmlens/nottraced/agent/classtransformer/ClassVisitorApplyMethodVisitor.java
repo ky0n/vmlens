@@ -53,9 +53,6 @@ public class ClassVisitorApplyMethodVisitor extends ClassVisitor implements Need
                                      String signature,
                                      String[] exceptions) {
         MethodVisitor previous = super.visitMethod(access, name, descriptor, signature, exceptions);
-        if ("<init>".equals(name)) {
-            return previous;
-        }
         if ((access & ACC_NATIVE) == ACC_NATIVE) {
             return previous;
         }

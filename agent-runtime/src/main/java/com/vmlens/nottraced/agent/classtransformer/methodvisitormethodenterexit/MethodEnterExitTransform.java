@@ -1,9 +1,14 @@
 package com.vmlens.nottraced.agent.classtransformer.methodvisitormethodenterexit;
 
 import com.vmlens.nottraced.agent.classtransformer.callbackfactory.MethodCallbackFactory;
+import com.vmlens.nottraced.agent.classtransformer.callbackfactory.MethodCallbackFactoryAll;
 import com.vmlens.nottraced.agent.classtransformer.callbackfactory.MethodCallbackFactoryFactory;
+import com.vmlens.nottraced.agent.classtransformer.callbackfactory.MethodCallbackFactoryFactoryAll;
 import com.vmlens.nottraced.agent.classtransformer.methodvisitorfactory.FactoryContext;
+import com.vmlens.nottraced.agent.classtransformer.methodvisitorfactory.MethodVisitorFactory;
+
 import org.objectweb.asm.MethodVisitor;
+import org.objectweb.asm.Type;
 
 import static com.vmlens.nottraced.agent.classtransformer.ASMConstants.ASM_API_VERSION;
 import static org.objectweb.asm.Opcodes.*;
@@ -13,6 +18,7 @@ public class MethodEnterExitTransform extends MethodVisitor {
 
     private final FactoryContext factoryContext;
     private final MethodCallbackFactory methodCallbackFactory;
+    private int access;
 
     public MethodEnterExitTransform(MethodVisitor methodVisitor,
                                     FactoryContext factoryContext,
@@ -22,13 +28,29 @@ public class MethodEnterExitTransform extends MethodVisitor {
         this.methodCallbackFactory = factoryFactory.create(this.mv);
     }
 
+    public MethodEnterExitTransform(MethodVisitor methodVisitor,
+                                    FactoryContext factoryContext,
+                                    MethodCallbackFactoryFactory factoryFactory,
+                                    int access) {
+        this(methodVisitor, factoryContext, factoryFactory);
+        this.access = access;
+    }
+
+    public static MethodVisitorFactory factory(int access) {
+        return (factoryContext, previous) ->
+              new MethodEnterExitTransform(previous, factoryContext, new MethodCallbackFactoryFactoryAll(), access);
+    }
+
     @Override
     public void visitCode() {
         super.visitCode();
-        factoryContext.methodEnterExitStrategy().createMethodEnter(mv,
-                methodCallbackFactory,
-                factoryContext.methodId(),
-                factoryContext.className());
+        boolean isStatic = ((access & ACC_STATIC) == ACC_STATIC);
+        if (isStatic) {
+            super.visitLdcInsn(Type.getType("L" + factoryContext.className() + ";"));
+        } else {
+            super.visitVarInsn(ALOAD, 0);
+        }
+        methodCallbackFactory.methodEnter(factoryContext.methodId());
     }
 
     @Override
